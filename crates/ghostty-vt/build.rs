@@ -7,8 +7,10 @@ fn zig_target(target: &str) -> &str {
     match target {
         "x86_64-unknown-linux-gnu" => "x86_64-linux-gnu",
         "aarch64-unknown-linux-gnu" => "aarch64-linux-gnu",
+        "riscv64gc-unknown-linux-gnu" | "riscv64a23-unknown-linux-gnu" => "riscv64-linux-gnu",
         "x86_64-unknown-linux-musl" => "x86_64-linux-musl",
         "aarch64-unknown-linux-musl" => "aarch64-linux-musl",
+        "riscv64gc-unknown-linux-musl" | "riscv64a23-unknown-linux-musl" => "riscv64-linux-musl",
         "x86_64-apple-darwin" => "x86_64-macos",
         "aarch64-apple-darwin" => "aarch64-macos",
         "aarch64-apple-ios" => "aarch64-ios",
@@ -56,8 +58,10 @@ fn main() {
     println!("cargo:rerun-if-env-changed=LIBGHOSTTY_VT_WINDOWS_LIBC");
 
     let optimize = env::var("LIBGHOSTTY_VT_OPTIMIZE").unwrap_or_else(|_| "ReleaseFast".into());
-    let simd = env_bool("LIBGHOSTTY_VT_SIMD").unwrap_or(true);
     let target = env::var("TARGET").expect("TARGET");
+    // TODO: Highway's RVV intrinsics do not compile for Zig's baseline riscv64 CPU.
+    //       We may find better way to detect that.
+    let simd = env_bool("LIBGHOSTTY_VT_SIMD").unwrap_or(!target.starts_with("riscv64"));
     let zig_target = zig_target(&target);
     let version_string = fs::read_to_string(vendored_dir.join("VERSION"))
         .expect("failed to read vendored libghostty-vt VERSION")
